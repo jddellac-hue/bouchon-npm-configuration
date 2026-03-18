@@ -1,0 +1,33 @@
+import { PeAuthType, OpenAMOptions } from '../declarations/index';
+import { HttpClient } from '@angular/common/http';
+export declare class OpenAMType implements PeAuthType {
+    private http;
+    static readonly FLOW_AUTHORIZATION_CODE: string;
+    static readonly FLOW_IMPLICIT: string;
+    static readonly FLOW_AUTHORIZATION_CODE_WITH_PKCE: string;
+    ready: Promise<OpenAMType>;
+    cxnUrl: string;
+    autoReload: boolean;
+    cookieName: string;
+    private static readonly COOKIE_SUFFIXE;
+    private _options;
+    private _redirect_uri;
+    private _state;
+    private _nonce;
+    private _verifier;
+    private _code_challenge;
+    private _code_challenge_method;
+    private storage;
+    private _storageKey;
+    private _flow;
+    constructor(openAMOptions: OpenAMOptions, mode: string, redirect: string, http: HttpClient);
+    getTokenFromCookie(cookie: any): any;
+    getTokenFromUrl(url: any, callback: (token: any) => void): void;
+    isValidToken(token: any, time: number): boolean;
+    buildAuthorization(token: any, mode: string): string;
+    logout(token: any, callback: () => void): void;
+    private base64URLEncode(words);
+    private buildCxnUrl(mode);
+    private randomizeString(length);
+    private buildLogoutUrl();
+}

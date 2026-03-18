@@ -1,0 +1,1 @@
+{"version":3,"file":"pe-auth.module.d.ts","sources":["pe-auth.module.d.ts"],"names":[],"mappings":"AAAA;;;;;AACA;AACA,6CAA6C,6BAAG;;;;AAChD","sourcesContent":["import { PeAuthOptions } from '../declarations/index';\nexport declare class PeAuthModule {\n    static forRoot(options?: PeAuthOptions): any;\n}\n"]}

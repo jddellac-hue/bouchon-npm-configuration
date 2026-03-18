@@ -1,0 +1,11 @@
+import { Router, CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import { PeAuthService } from './pe-auth.service';
+import { Observable } from 'rxjs';
+import { PeInterceptService } from './pe-intercept.service';
+export declare class PeAuthGuardService implements CanActivate {
+    private router;
+    private peAuthService;
+    private peInterceptService;
+    constructor(router: Router, peAuthService: PeAuthService, peInterceptService: PeInterceptService);
+    canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean;
+}

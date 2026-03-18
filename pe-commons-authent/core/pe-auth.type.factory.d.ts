@@ -1,0 +1,29 @@
+import { PeAuthOptions } from "../declarations/pe-auth.options";
+import { HttpClient } from "@angular/common/http";
+import { LocationStrategy } from "@angular/common";
+import { PeAuthType } from "../declarations";
+import * as ɵngcc0 from '@angular/core';
+export declare class PeAuthTypeFactory {
+    private http;
+    private locationStrategy;
+    private _authOptions;
+    static readonly MODE_AGENT: string;
+    static readonly MODE_EMPLOYEUR: string;
+    static readonly MODE_INDIVIDU: string;
+    static readonly MODE_PARTENAIRE: string;
+    static readonly AUTH_WEBSSO: string;
+    static readonly AUTH_KITSSO: string;
+    static readonly AUTH_NET_ENTREPRISE: string;
+    static readonly AUTH_PEAM: string;
+    constructor(options: PeAuthOptions, http: HttpClient, locationStrategy: LocationStrategy);
+    readonly redirectUrl: string;
+    readonly loginRoute: any[];
+    readonly connectBy: "window" | "iframe";
+    readonly maxRetry: number;
+    getPeAuthType(type: string, mode: string): PeAuthType;
+    private buildRedirectPath();
+    static ɵfac: ɵngcc0.ɵɵFactoryDeclaration<PeAuthTypeFactory, never>;
+    static ɵprov: ɵngcc0.ɵɵInjectableDeclaration<PeAuthTypeFactory>;
+}
+
+//# sourceMappingURL=pe-auth.type.factory.d.ts.map

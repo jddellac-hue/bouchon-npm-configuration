@@ -1,0 +1,4 @@
+import { PeAuthOptions } from '../declarations/index';
+export declare class PeAuthModule {
+    static forRoot(options?: PeAuthOptions): any;
+}

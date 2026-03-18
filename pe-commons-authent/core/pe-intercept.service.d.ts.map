@@ -1,0 +1,1 @@
+{"version":3,"file":"pe-intercept.service.d.ts","sources":["pe-intercept.service.d.ts"],"names":[],"mappings":"AAAA;;AACA;AACA;AACA;;;AACA","sourcesContent":["import { RouterStateSnapshot } from \"@angular/router\";\nexport declare class PeInterceptService {\n    secureRoute: RouterStateSnapshot;\n    clear: (e: any) => void;\n}\n"]}

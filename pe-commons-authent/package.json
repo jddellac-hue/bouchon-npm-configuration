@@ -1,17 +1,72 @@
 {
+  "author": "Anthony Bompas",
   "name": "@pe-commons/authent",
   "version": "1.2.0",
-  "description": "Bouchon @pe-commons/authent pour build hors réseau entreprise",
-  "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc -p tsconfig.json"
-  },
+  "license": "MIT",
+  "description": "Module d'authentification pôle-emploi",
   "peerDependencies": {
-    "@angular/core": ">=15.0.0",
-    "@angular/router": ">=15.0.0"
+    "@angular/platform-browser": ">=4.0.0",
+    "@angular/core": ">=4.0.0",
+    "@angular/common": ">=4.0.0",
+    "@angular/router": ">=4.0.0",
+    "ngx-cookie": ">=3.0.0",
+    "rxjs": ">=5.0.0",
+    "crypto-js": ">=3.1.2"
   },
   "devDependencies": {
-    "typescript": "^4.9.5"
+    "@angular/common": "^5.2.11",
+    "@angular/compiler": "^5.2.11",
+    "@angular/compiler-cli": "^5.2.11",
+    "@angular/core": "^5.2.11",
+    "@angular/platform-browser": "^5.2.11",
+    "@angular/platform-browser-dynamic": "^5.2.11",
+    "@angular/router": "^5.2.11",
+    "@types/crypto-js": "^4.0.2",
+    "crypto-js": "^4.1.1",
+    "handlebars": "^4.7.7",
+    "jest": "^22.4.4",
+    "jest-junit": "^3.7.0",
+    "jest-preset-angular": "^5.2.3",
+    "ng-packagr": "^2.4.5",
+    "ngx-cookie": "^3.0.1",
+    "rxjs": "^5.5.12",
+    "typescript": "~2.4.2",
+    "zone.js": "^0.8.29"
+  },
+  "jest": {
+    "preset": "jest-preset-angular",
+    "setupTestFrameworkScriptFile": "<rootDir>/setup-jest.ts",
+    "testResultsProcessor": "jest-junit",
+    "testPathIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!@ngrx)"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "testURL": "http://test"
+  },
+  "jest-junit": {
+    "suiteName": "TU @pe-commons/authent",
+    "output": "./coverage/junit.xml"
+  },
+  "main": "bundles/pe-commons-authent.umd.js",
+  "module": "esm5/pe-commons-authent.js",
+  "es2015": "esm2015/pe-commons-authent.js",
+  "typings": "pe-commons-authent.d.ts",
+  "metadata": "pe-commons-authent.metadata.json",
+  "dependencies": {
+    "tslib": "^1.7.1"
+  },
+  "__processed_by_ivy_ngcc__": {
+    "es2015": "15.2.10",
+    "main": "15.2.10",
+    "module": "15.2.10",
+    "typings": "15.2.10"
+  },
+  "scripts": {
+    "prepublishOnly": "node --eval \"console.error('ERROR: Trying to publish a package that has been compiled by NGCC. This is not allowed.\\nPlease delete and rebuild the package, without compiling with NGCC, before attempting to publish.\\nNote that NGCC may have been run by importing this package into another project that is being built with Ivy enabled.\\n')\" && exit 1"
   }
 }

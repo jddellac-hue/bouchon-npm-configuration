@@ -1,0 +1,1114 @@
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(require('@angular/core'),require('@angular/common/http'),require('@angular/common'),require('ngx-cookie'),require('@angular/router'),exports, require('@angular/core'), require('@angular/common/http'), require('crypto-js'), require('@angular/common'), require('ngx-cookie'), require('rxjs'), require('@angular/router')) :
+	typeof define === 'function' && define.amd ? define('@pe-commons/authent', ['@angular/core','@angular/common/http','@angular/common','ngx-cookie','@angular/router','exports', '@angular/core', '@angular/common/http', 'crypto-js', '@angular/common', 'ngx-cookie', 'rxjs', '@angular/router'], factory) :
+	(factory(global.ng.core,global.ng.common.http,global.ng.common,global.ngxCookie,global.ng.router,(global['pe-commons'] = global['pe-commons'] || {}, global['pe-commons'].authent = {}),global.ng.core,global.ng.common.http,global['crypto-js'],global.ng.common,global.CookieModule,global.rxjs,global.ng.router));
+}(this, (function (ɵngcc0,ɵngcc1,ɵngcc2,ɵngcc3,ɵngcc4,exports,core,http,cryptoJs,common,ngxCookie,rxjs,router) { 'use strict';
+
+var AUTH_OPTIONS = new core.InjectionToken('AUTH_OPTIONS');
+function searchParams(url, inner) {
+    var params = {};
+    var pStr = url.substr(url.indexOf('?') + 1);
+    var pReg = /([^=]*)=([^&]*)&?/g;
+    var pMatch;
+    while ((pMatch = pReg.exec(pStr)) !== null) {
+        if (!inner || inner[pMatch[1]]) {
+            params[pMatch[1]] = decodeURIComponent(pMatch[2]);
+        }
+    }
+    return params;
+}
+function getEncapsulationAttr(el) {
+    for (var i = 0; i < el.attributes.length; i++) {
+        if (el.attributes[i].name.startsWith('_nghost-')) {
+            return '_ngcontent-' + el.attributes[i].name.substr(8);
+        }
+        if (el.attributes[i].name.startsWith('_ngcontent-')) {
+            return el.attributes[i].name;
+        }
+    }
+    return null;
+}
+function formatCookieName(cookieName, prefix, suffix) {
+    return (prefix ? (prefix + "_") : "") + cookieName + (suffix ? suffix : "");
+}
+var WebSSOType = (function () {
+    function WebSSOType(webSSOOptions, mode, redirect) {
+        this.autoReload = true;
+        this.cookieName = 'userToken';
+        this.cookieName = formatCookieName(this.cookieName, webSSOOptions.cadre, "");
+        this._options = webSSOOptions;
+        this.cxnUrl = this.buildCxnUrl(redirect);
+        this.ready = Promise.resolve(this);
+    }
+    WebSSOType.prototype.getTokenFromCookie = function (cookie) {
+        return typeof cookie === 'string' ? JSON.parse(cookie) : cookie;
+    };
+    WebSSOType.prototype.getTokenFromUrl = function (url, callback) {
+        var token;
+        try {
+            token = JSON.parse(searchParams(url)['j_username']);
+        }
+        catch (e) {
+            token = null;
+        }
+        callback(token);
+    };
+    WebSSOType.prototype.isValidToken = function (token, time) {
+        var isValid;
+        try {
+            var h = this._options.hasOwnProperty("tokenValidityDuration") ? this._options.tokenValidityDuration : 24;
+            isValid = (Date.now() - token['attributs']['timestamp'] < 1000 * 60 * 60 * h) && token['resultatAuthent'] === true;
+        }
+        catch (e) {
+            isValid = false;
+        }
+        return isValid;
+    };
+    WebSSOType.prototype.buildAuthorization = function (token, mode) {
+        return 'Bearer ' + mode + JSON.stringify(token);
+    };
+    WebSSOType.prototype.logout = function (token, callback) {
+        callback();
+    };
+    WebSSOType.prototype.buildCxnUrl = function (redirect) {
+        var url = this._options.webSSOUrl;
+        url += (this._options.webSSOUrl.indexOf('?') > -1 ? '&' : '?') + 'referer=' + encodeURIComponent(redirect);
+        return url;
+    };
+    return WebSSOType;
+}());
+var KitSSOType = (function () {
+    function KitSSOType(kitSSOOptions, mode, redirect) {
+        this.autoReload = true;
+        this.cookieName = 'userToken';
+        this.cookieName = formatCookieName(this.cookieName, kitSSOOptions.cadre, KitSSOType.COOKIE_SUFFIXE[mode]);
+        this._options = kitSSOOptions;
+        this.cxnUrl = this.buildCxnUrl(redirect);
+        this.ready = Promise.resolve(this);
+    }
+    KitSSOType.prototype.getTokenFromCookie = function (cookie) {
+        return typeof cookie === 'string' ? JSON.parse(cookie) : cookie;
+    };
+    KitSSOType.prototype.getTokenFromUrl = function (url, callback) {
+        var token;
+        try {
+            token = JSON.parse(searchParams(url)['j_username']);
+        }
+        catch (e) {
+            token = null;
+        }
+        callback(token);
+    };
+    KitSSOType.prototype.isValidToken = function (token, time) {
+        var isValid;
+        try {
+            var h = this._options.hasOwnProperty("tokenValidityDuration") ? this._options.tokenValidityDuration : 24;
+            isValid = (Date.now() - token['attributs']['timestamp'] < 1000 * 60 * 60 * h) && token['resultatAuthent'] === true;
+        }
+        catch (e) {
+            isValid = false;
+        }
+        return isValid;
+    };
+    KitSSOType.prototype.buildAuthorization = function (token, mode) {
+        return 'Bearer ' + mode + JSON.stringify(token);
+    };
+    KitSSOType.prototype.logout = function (token, callback) {
+        callback();
+    };
+    KitSSOType.prototype.buildCxnUrl = function (redirect) {
+        var url = this._options.kitSSOUrl;
+        url += (this._options.kitSSOUrl.indexOf('?') > -1 ? '&' : '?') + 'referer=' + encodeURIComponent(redirect);
+        return url;
+    };
+    return KitSSOType;
+}());
+KitSSOType.COOKIE_SUFFIXE = {
+    agent: 'A'
+};
+var AuthorizationCodeFlow = (function () {
+    function AuthorizationCodeFlow(http$$1, openAMOptions, state, redirect_uri) {
+        this.http = http$$1;
+        this._options = openAMOptions;
+        this._redirect_uri = redirect_uri;
+        this._state = state;
+    }
+    AuthorizationCodeFlow.prototype.getTokenFromUrl = function (url, callback) {
+        var urlParams = searchParams(url);
+        if (urlParams['state'] === this._state && urlParams.hasOwnProperty('code')) {
+            var body = [
+                "grant_type=authorization_code",
+                "code=" + urlParams['code'],
+                "client_id=" + this._options.clientId,
+                "redirect_uri=" + encodeURIComponent(this._redirect_uri),
+            ].join('&');
+            var authorizeResource = this._options.authorizeResource;
+            var accessTokenUrl = authorizeResource.accessTokenUrl ? (this._options.openAMUrl + authorizeResource.accessTokenUrl) : authorizeResource.externalAccessTokenUrl;
+            if (!accessTokenUrl)
+                throw "accessTokenUrl or externalAccessTokenUrl is required in configurations";
+            this.http.post(accessTokenUrl, body, {
+                headers: new http.HttpHeaders({
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }),
+            }).subscribe(function (data) { return callback(data); }, function (resp) { return callback(null); });
+        }
+        else {
+            callback(null);
+        }
+    };
+    AuthorizationCodeFlow.prototype.isValidToken = function (token, time, state, nonce) {
+        return token['nonce'] === nonce && parseInt(token['expires_in']) * 1000 + time > Date.now();
+    };
+    return AuthorizationCodeFlow;
+}());
+var ImplicitFlow = (function () {
+    function ImplicitFlow() {
+    }
+    ImplicitFlow.prototype.getTokenFromUrl = function (url, callback) {
+        callback(this.extractToken(url.indexOf('#') >= 0 ? url.split('#')[1] : ''));
+    };
+    ImplicitFlow.prototype.isValidToken = function (token, time, state, nonce) {
+        return token['state'] === state && parseInt(token['expires_in']) * 1000 + time > Date.now();
+    };
+    ImplicitFlow.prototype.extractToken = function (url) {
+        return searchParams(url, {
+            scope: true,
+            nonce: true,
+            expires_in: true,
+            token_type: true,
+            refresh_token: true,
+            id_token: true,
+            access_token: true,
+            state: true
+        });
+    };
+    return ImplicitFlow;
+}());
+var AuthorizationCodeWithPKCEFlow = (function () {
+    function AuthorizationCodeWithPKCEFlow(http$$1, openAMOptions, state, redirect_uri, verifier) {
+        this.http = http$$1;
+        this._options = openAMOptions;
+        this._redirect_uri = redirect_uri;
+        this._state = state;
+        this._verifier = verifier;
+    }
+    AuthorizationCodeWithPKCEFlow.prototype.getTokenFromUrl = function (url, callback) {
+        var urlParams = searchParams(url);
+        if (urlParams['state'] === this._state && urlParams.hasOwnProperty('code')) {
+            var body = [
+                "grant_type=authorization_code",
+                "code=" + urlParams['code'],
+                "client_id=" + this._options.clientId,
+                "redirect_uri=" + encodeURIComponent(this._redirect_uri),
+                "code_verifier=" + this._verifier
+            ].join('&');
+            var authorizeResource = this._options.authorizeResource;
+            var accessTokenUrl = authorizeResource.accessTokenUrl ? (this._options.openAMUrl + authorizeResource.accessTokenUrl) : authorizeResource.externalAccessTokenUrl;
+            if (!accessTokenUrl)
+                throw "accessTokenUrl or externalAccessTokenUrl is required in configurations";
+            this.http.post(accessTokenUrl, body, {
+                headers: new http.HttpHeaders({
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }),
+            }).subscribe(function (data) { return callback(data); }, function (resp) { return callback(null); });
+        }
+        else {
+            callback(null);
+        }
+    };
+    AuthorizationCodeWithPKCEFlow.prototype.isValidToken = function (token, time, state, nonce) {
+        return token['nonce'] === nonce && parseInt(token['expires_in']) * 1000 + time > Date.now();
+    };
+    return AuthorizationCodeWithPKCEFlow;
+}());
+var OpenAMType = (function () {
+    function OpenAMType(openAMOptions, mode, redirect, http$$1) {
+        this.autoReload = false;
+        this.cookieName = 'userBadge';
+        this.storage = localStorage;
+        this.cookieName = formatCookieName(this.cookieName, openAMOptions.cadre, OpenAMType.COOKIE_SUFFIXE[mode]);
+        this._options = openAMOptions;
+        this._redirect_uri = redirect;
+        this._state = this.randomizeString(16);
+        this._nonce = this.randomizeString(16);
+        this.cxnUrl = this.buildCxnUrl(mode);
+        this._storageKey = '__' + openAMOptions.clientId;
+        this.http = http$$1;
+        switch (this._options.accessTokenFlow) {
+            case OpenAMType.FLOW_AUTHORIZATION_CODE:
+                this._flow = new AuthorizationCodeFlow(http$$1, this._options, this._state, redirect);
+                break;
+            case OpenAMType.FLOW_AUTHORIZATION_CODE_WITH_PKCE:
+                this._verifier = this.randomizeString(50);
+                this._code_challenge_method = "S256";
+                this._code_challenge = this.base64URLEncode(cryptoJs.SHA256(this._verifier));
+                this.cxnUrl += "&code_challenge=" + this._code_challenge + "&code_challenge_method=" + this._code_challenge_method;
+                this._flow = new AuthorizationCodeWithPKCEFlow(http$$1, this._options, this._state, redirect, this._verifier);
+                break;
+            case OpenAMType.FLOW_IMPLICIT:
+                this._flow = new ImplicitFlow();
+                break;
+            default:
+                throw 'Access token flow "' + this._options.accessTokenFlow + '" does not exists.';
+        }
+        this.ready = Promise.resolve(this);
+    }
+    OpenAMType.prototype.getTokenFromCookie = function (cookie) {
+        return typeof cookie === 'string' ? JSON.parse(cookie) : cookie;
+    };
+    OpenAMType.prototype.getTokenFromUrl = function (url, callback) {
+        this._flow.getTokenFromUrl(url, callback);
+    };
+    OpenAMType.prototype.isValidToken = function (token, time) {
+        var nonce;
+        var state;
+        if (time > 0) {
+            nonce = this._nonce;
+            state = this._state;
+            this.storage.setItem(this._storageKey, JSON.stringify({ state: this._state, nonce: this._nonce, time: time }));
+        }
+        else {
+            var lastCxn = JSON.parse(this.storage.getItem(this._storageKey));
+            time = lastCxn.time;
+            nonce = lastCxn.nonce;
+            state = lastCxn.state;
+        }
+        return this._flow.isValidToken(token, time, state, nonce);
+    };
+    OpenAMType.prototype.buildAuthorization = function (token, mode) {
+        return 'Bearer ' + token['access_token'];
+    };
+    OpenAMType.prototype.logout = function (token, callback) {
+        var _this = this;
+        if (token !== null) {
+            var logoutUrl_1 = this.buildLogoutUrl();
+            var oidcParams = new http.HttpParams().set('id_token_hint', token['id_token']);
+            this.http.get(logoutUrl_1.oidc, { params: oidcParams }).subscribe(callback, function (err) {
+                _this.http.get(logoutUrl_1.oam).subscribe(callback, callback);
+            });
+        }
+        else {
+            callback();
+        }
+    };
+    OpenAMType.prototype.base64URLEncode = function (words) {
+        return cryptoJs.enc.Base64.stringify(words).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    };
+    OpenAMType.prototype.buildCxnUrl = function (mode) {
+        var url = this._options.openAMUrl + this._options.authorizeResource.url;
+        url += (url.indexOf('?') > -1 ? '&' : '?') + 'realm=' + encodeURIComponent('/' + mode);
+        url += '&response_type=' + encodeURIComponent(this._options.authorizeResource.responseType);
+        url += '&client_id=' + this._options.clientId;
+        url += '&scope=' + encodeURIComponent(this._options.authorizeResource.scope);
+        url += '&redirect_uri=' + encodeURIComponent(this._redirect_uri);
+        url += '&state=' + this._state;
+        url += '&nonce=' + this._nonce;
+        return url;
+    };
+    OpenAMType.prototype.randomizeString = function (length) {
+        return this.base64URLEncode(cryptoJs.lib.WordArray.random(length));
+    };
+    OpenAMType.prototype.buildLogoutUrl = function () {
+        var oidc = this._options.openAMUrl + this._options.logoutResource.urlOIDC;
+        var oam = this._options.openAMUrl + this._options.logoutResource.urlOpenAM;
+        return {
+            oidc: oidc,
+            oam: oam
+        };
+    };
+    return OpenAMType;
+}());
+OpenAMType.FLOW_AUTHORIZATION_CODE = "authorizationCodeFlow";
+OpenAMType.FLOW_IMPLICIT = "implicitFlow";
+OpenAMType.FLOW_AUTHORIZATION_CODE_WITH_PKCE = "authorizationCodeWithPKCEFlow";
+OpenAMType.COOKIE_SUFFIXE = {
+    agent: 'A',
+    individu: 'I',
+    employeur: 'E',
+    partenaire: 'P'
+};
+var NetEntrepriseType = (function () {
+    function NetEntrepriseType(netEntrepriseOptions, mode, redirect) {
+        this.autoReload = false;
+        this.cookieName = "netToken";
+        this.cookieName = formatCookieName(this.cookieName, netEntrepriseOptions.cadre, "");
+        this._options = netEntrepriseOptions;
+        this.cxnUrl = this.buildCxnUrl(redirect);
+        this.ready = Promise.resolve(this);
+    }
+    NetEntrepriseType.prototype.getTokenFromCookie = function (cookie) {
+        return cookie;
+    };
+    NetEntrepriseType.prototype.getTokenFromUrl = function (url, callback) {
+        var token;
+        try {
+            token = searchParams(url)['ticket'];
+        }
+        catch (e) {
+            token = null;
+        }
+        callback(token ? token : null);
+    };
+    NetEntrepriseType.prototype.isValidToken = function (token, time) {
+        return token !== null;
+    };
+    NetEntrepriseType.prototype.buildAuthorization = function (token, mode) {
+        return 'Bearer ' + mode + token;
+    };
+    NetEntrepriseType.prototype.logout = function (token, callback) {
+        callback();
+    };
+    NetEntrepriseType.prototype.buildCxnUrl = function (redirect) {
+        var url = null;
+        if (this._options.netEntrepriseUrl) {
+            throw 'Net-Entreprise connexion is not yet implemented.';
+        }
+        return url;
+    };
+    return NetEntrepriseType;
+}());
+var PeAuthTypeFactory = (function () {
+    function PeAuthTypeFactory(options, http$$1, locationStrategy) {
+        this.http = http$$1;
+        this.locationStrategy = locationStrategy;
+        this._authOptions = options;
+        if (!options.redirectUrl.startsWith('http'))
+            this.buildRedirectPath();
+    }
+    Object.defineProperty(PeAuthTypeFactory.prototype, "redirectUrl", {
+        get: function () {
+            return this._authOptions.redirectUrl;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(PeAuthTypeFactory.prototype, "loginRoute", {
+        get: function () {
+            return this._authOptions.loginRoute;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(PeAuthTypeFactory.prototype, "connectBy", {
+        get: function () {
+            return this._authOptions.connectBy ? this._authOptions.connectBy : 'iframe';
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(PeAuthTypeFactory.prototype, "maxRetry", {
+        get: function () {
+            return this._authOptions.maxRetry ? this._authOptions.maxRetry : 5;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    PeAuthTypeFactory.prototype.getPeAuthType = function (type, mode) {
+        switch (type) {
+            case PeAuthTypeFactory.AUTH_WEBSSO:
+                if (!(mode === PeAuthTypeFactory.MODE_AGENT))
+                    throw 'Invalid authentification : ' + mode + ' does not exist for type' + type + '.';
+                var webSSOOptions = this._authOptions.webSSO[mode];
+                return new WebSSOType(webSSOOptions, mode, this._authOptions.redirectUrl);
+            case PeAuthTypeFactory.AUTH_KITSSO:
+                if (!(mode === PeAuthTypeFactory.MODE_AGENT))
+                    throw 'Invalid authentification : ' + mode + ' does not exist for type' + type + '.';
+                var kitSSOOptions = this._authOptions.kitSSO[mode];
+                return new KitSSOType(kitSSOOptions, mode, this._authOptions.redirectUrl);
+            case PeAuthTypeFactory.AUTH_NET_ENTREPRISE:
+                if (!(mode === PeAuthTypeFactory.MODE_PARTENAIRE))
+                    throw 'Invalid authentification : ' + mode + ' does not exist for type' + type + '.';
+                var netEntrepriseOptions = this._authOptions.netEntreprise[mode];
+                return new NetEntrepriseType(netEntrepriseOptions, mode, this._authOptions.redirectUrl);
+            case PeAuthTypeFactory.AUTH_PEAM:
+                if (!(mode === PeAuthTypeFactory.MODE_AGENT || mode === PeAuthTypeFactory.MODE_EMPLOYEUR || mode === PeAuthTypeFactory.MODE_INDIVIDU || mode === PeAuthTypeFactory.MODE_PARTENAIRE))
+                    throw 'Invalid authentification : ' + mode + ' does not exist for type' + type + '.';
+                var openAMOptions = this._authOptions.openAM[mode];
+                return new OpenAMType(openAMOptions, mode, this._authOptions.redirectUrl, this.http);
+            default:
+                throw 'Invalid authentification : ' + type + ' does not exist.';
+        }
+    };
+    PeAuthTypeFactory.prototype.buildRedirectPath = function () {
+        var baseHref = '';
+        if (this.locationStrategy instanceof common.HashLocationStrategy) {
+            baseHref = window.location.pathname;
+        }
+        else if (this.locationStrategy instanceof common.PathLocationStrategy) {
+            baseHref = this.locationStrategy.getBaseHref();
+        }
+        baseHref = baseHref ? (baseHref.endsWith('/') ? baseHref.substring(0, baseHref.length - 1) : baseHref) : '';
+        this._authOptions.redirectUrl = window.location.origin + baseHref + this._authOptions.redirectUrl;
+    };
+PeAuthTypeFactory.ɵfac = function PeAuthTypeFactory_Factory(t) { return new (t || PeAuthTypeFactory)(ɵngcc0.ɵɵinject(AUTH_OPTIONS), ɵngcc0.ɵɵinject(ɵngcc1.HttpClient), ɵngcc0.ɵɵinject(ɵngcc2.LocationStrategy)); };
+PeAuthTypeFactory.ɵprov = /*@__PURE__*/ ɵngcc0.ɵɵdefineInjectable({ token: PeAuthTypeFactory, factory: function (t) { return PeAuthTypeFactory.ɵfac(t); } });
+(function () { (typeof ngDevMode === "undefined" || ngDevMode) && ɵngcc0.ɵsetClassMetadata(PeAuthTypeFactory, [{
+        type: core.Injectable
+    }], function () { return [{ type: undefined, decorators: [{
+                type: core.Inject,
+                args: [AUTH_OPTIONS]
+            }] }, { type: ɵngcc1.HttpClient }, { type: ɵngcc2.LocationStrategy }]; }, null); })();
+    return PeAuthTypeFactory;
+}());
+PeAuthTypeFactory.MODE_AGENT = 'agent';
+PeAuthTypeFactory.MODE_EMPLOYEUR = 'employeur';
+PeAuthTypeFactory.MODE_INDIVIDU = 'individu';
+PeAuthTypeFactory.MODE_PARTENAIRE = 'partenaire';
+PeAuthTypeFactory.AUTH_WEBSSO = 'webSSO';
+PeAuthTypeFactory.AUTH_KITSSO = 'kitSSO';
+PeAuthTypeFactory.AUTH_NET_ENTREPRISE = 'netEntreprise';
+PeAuthTypeFactory.AUTH_PEAM = 'openAM';
+PeAuthTypeFactory.ctorParameters = function () { return [
+    { type: undefined, decorators: [{ type: core.Inject, args: [AUTH_OPTIONS,] },] },
+    { type: http.HttpClient, },
+    { type: common.LocationStrategy, },
+]; };
+var PeAuthService = (function () {
+    function PeAuthService(peAuthTypeFactory, cookieService, rendererFactory, ngZone) {
+        var _this = this;
+        this.peAuthTypeFactory = peAuthTypeFactory;
+        this.cookieService = cookieService;
+        this.rendererFactory = rendererFactory;
+        this.ngZone = ngZone;
+        this._time = 0;
+        this._type = null;
+        this._mode = null;
+        this._status = PeAuthService.CXN_OFF;
+        this._token = null;
+        this._nbAttempt = 0;
+        this._subject = new rxjs.BehaviorSubject({ status: this._status, token: this._token, refreshToken: false, attempt: this._nbAttempt });
+        this._onConnect = function () { return true; };
+        this.recievedMessage = function (e, refreshToken) {
+            var parentNode = _this.getIframeParentNode();
+            if (!parentNode) {
+                _this.stopListening();
+            }
+            else {
+                var isWindow_1 = _this._iframe.window === _this._iframe;
+                var win_1 = isWindow_1 ? _this._iframe : _this._iframe.contentWindow;
+                if (e.origin === window.location.origin && e.source === win_1 && e.data !== null && e.data.startsWith(_this.peAuthTypeFactory.redirectUrl)) {
+                    _this.ngZone.run(function () {
+                        var promise = new Promise(function (resolve, reject) {
+                            var reloaded = false;
+                            _this.authByUrl(e.data).then(function () {
+                                resolve(reloaded);
+                            }).catch(function () {
+                                if (reloaded = _this._authType.autoReload) {
+                                    if (_this._nbAttempt === _this.peAuthTypeFactory.maxRetry) {
+                                        _this._status = PeAuthService.CXN_MAX_RETRY;
+                                        reloaded = false;
+                                    }
+                                    else {
+                                        _this._nbAttempt++;
+                                        _this._subject.next({ status: _this._status, token: _this._token, refreshToken: refreshToken, attempt: _this._nbAttempt });
+                                        win_1.location.href = _this._authType.cxnUrl;
+                                    }
+                                }
+                                else {
+                                    _this._status = PeAuthService.CXN_ECHEC;
+                                }
+                                resolve(reloaded);
+                            });
+                        });
+                        promise.then(function (reloaded) {
+                            if (!reloaded) {
+                                if (isWindow_1) {
+                                    win_1.close();
+                                }
+                                else {
+                                    _this._renderer.removeChild(parentNode, _this._iframe);
+                                }
+                                _this.stopListening();
+                                _this.afterCxn(_this._token, _this._status, refreshToken);
+                            }
+                        });
+                    });
+                }
+            }
+        };
+        this.iframeLoaded = function (e) {
+            setTimeout(function () {
+                try {
+                    var parentNode = _this._renderer.parentNode(_this._iframe);
+                    if (parentNode !== null) {
+                        var loc = _this._iframe.contentWindow.location;
+                        if (loc.origin + loc.pathname !== _this.peAuthTypeFactory.redirectUrl)
+                            throw 'Not redirect yet.';
+                    }
+                }
+                catch (e) {
+                    if (_this._iframe)
+                        _this._renderer.setAttribute(_this._iframe, 'class', 'pe-auth-login');
+                }
+            }, 500);
+            _this._iframeLoadListener();
+        };
+        this._renderer = this.rendererFactory.createRenderer(null, null);
+        this._cookieOptions = {
+            path: '/',
+            domain: window.location.hostname.split('.').splice(-2).join('.'),
+            secure: window.location.protocol === 'https:'
+        };
+    }
+    PeAuthService.prototype.on = function (event, fn) {
+        switch (event) {
+            case "connect":
+                this._onConnect = fn;
+                break;
+        }
+    };
+    PeAuthService.prototype.afterCxn = function (token, status, refreshToken) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            function onError(e) {
+                console.error(e);
+                resolve(false);
+            }
+            if (status === PeAuthService.CXN_SUCCESS) {
+                try {
+                    var res = _this._onConnect(token, refreshToken, _this._nbAttempt);
+                    if (_this.isObservable(res)) {
+                        var sub_1 = ((res)).subscribe(function (isConnect) {
+                            resolve(isConnect);
+                            setTimeout(function () {
+                                if (sub_1) {
+                                    sub_1.unsubscribe();
+                                }
+                            }, 0);
+                        }, onError);
+                    }
+                    else if (_this.isPromise(res)) {
+                        ((res)).then(resolve).catch(onError);
+                    }
+                    else {
+                        resolve(res);
+                    }
+                }
+                catch (e) {
+                    onError(e);
+                }
+            }
+            else {
+                resolve(false);
+            }
+        }).then(function (connect) {
+            var isSuccess = _this._status === PeAuthService.CXN_SUCCESS;
+            if (!connect && isSuccess) {
+                _this._status = PeAuthService.CXN_ECHEC;
+            }
+            _this._subject.next({ status: _this._status, token: _this._token, refreshToken: refreshToken, attempt: _this._nbAttempt });
+            if (isSuccess) {
+                _this._nbAttempt = 0;
+            }
+        });
+    };
+    PeAuthService.prototype.isPromise = function (obj) {
+        return !!obj && typeof obj.then === 'function';
+    };
+    PeAuthService.prototype.isObservable = function (obj) {
+        return !!obj && typeof obj.subscribe === 'function';
+    };
+    PeAuthService.prototype.isConnected = function () {
+        return this._status === PeAuthService.CXN_SUCCESS && this._authType && this._authType.isValidToken(this._token, this._time);
+    };
+    PeAuthService.prototype.getStatus = function () {
+        return this._subject;
+    };
+    Object.defineProperty(PeAuthService.prototype, "status", {
+        get: function () {
+            return this._status;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(PeAuthService.prototype, "type", {
+        get: function () {
+            return this._type;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(PeAuthService.prototype, "mode", {
+        get: function () {
+            return this._mode;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(PeAuthService.prototype, "authorizationHeader", {
+        get: function () {
+            return this._authType && this._token ? this._authType.buildAuthorization(this._token, this._mode) : '';
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(PeAuthService.prototype, "loginRoute", {
+        get: function () {
+            return this.peAuthTypeFactory.loginRoute;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    PeAuthService.prototype.clear = function () {
+        var currentStatus = this._status;
+        this._time = 0;
+        this._type = null;
+        this._mode = null;
+        this._status = PeAuthService.CXN_OFF;
+        this._token = null;
+        this._nbAttempt = 0;
+        if (this._authType) {
+            this.cookieService.remove(this._authType.cookieName, this._cookieOptions);
+        }
+        if (currentStatus !== PeAuthService.CXN_OFF) {
+            this._subject.next({ status: this._status, token: this._token, refreshToken: false, attempt: this._nbAttempt });
+        }
+    };
+    PeAuthService.prototype.logout = function () {
+        var _this = this;
+        if (this._authType) {
+            this._authType.logout(this._token, function () {
+                _this.clear();
+            });
+        }
+        else {
+            this.clear();
+        }
+        return this._subject;
+    };
+    PeAuthService.prototype.inProgress = function (refreshToken) {
+        this._status = PeAuthService.CXN_PROGRESS;
+        this._nbAttempt++;
+        this._subject.next({ status: this._status, token: this._token, refreshToken: refreshToken, attempt: this._nbAttempt });
+    };
+    PeAuthService.prototype.connect = function (type, mode, container) {
+        var _this = this;
+        if (this._type !== type || this._mode !== mode || this._status !== PeAuthService.CXN_PROGRESS) {
+            var refreshToken_1 = false;
+            this._token = null;
+            this._type = type;
+            this._mode = mode;
+            this._nbAttempt = 0;
+            this.inProgress(refreshToken_1);
+            this.peAuthTypeFactory.getPeAuthType(type, mode).ready.then(function (authType) {
+                _this._authType = authType;
+                _this.authByUrl(document.location.href).then(function () {
+                    _this.afterCxn(_this._token, _this._status, false);
+                }).catch(function () {
+                    _this.ngZone.runOutsideAngular(function () {
+                        if (!_this.authByCookie()) {
+                            _this.auth(container ? container : document.body, refreshToken_1);
+                        }
+                    });
+                });
+            });
+        }
+        return this._subject;
+    };
+    PeAuthService.prototype.refreshToken = function (container) {
+        var _this = this;
+        if (!this._authType)
+            throw 'Connexion required.';
+        if (this._status !== PeAuthService.CXN_PROGRESS) {
+            var refreshToken_2 = true;
+            if (this._nbAttempt === (this.peAuthTypeFactory.maxRetry)) {
+                this._status = PeAuthService.CXN_MAX_RETRY;
+                this._subject.next({ status: this._status, token: this._token, refreshToken: refreshToken_2, attempt: this._nbAttempt });
+            }
+            else {
+                this._token = null;
+                this.cookieService.remove(this._authType.cookieName, this._cookieOptions);
+                this.inProgress(refreshToken_2);
+                this.ngZone.runOutsideAngular(function () {
+                    setTimeout(function () {
+                        _this.auth(container ? container : document.body, refreshToken_2);
+                    }, _this._nbAttempt > 1 ? 500 : 0);
+                });
+            }
+        }
+        return this._subject;
+    };
+    PeAuthService.prototype.getIframeParentNode = function () {
+        var parentNode = null;
+        if (this._iframe) {
+            if (this._iframe.window === this._iframe) {
+                parentNode = this._iframe.parent;
+            }
+            else {
+                parentNode = this._renderer.parentNode(this._iframe);
+            }
+        }
+        return parentNode;
+    };
+    PeAuthService.prototype.stopListening = function () {
+        this._iframe = null;
+        this._windowMessageListener();
+    };
+    PeAuthService.prototype.authByUrl = function (url) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            _this._time = Date.now();
+            try {
+                _this._authType.getTokenFromUrl(url, function (token) {
+                    if (!_this._authType.isValidToken(token, _this._time))
+                        throw 'Invalid authent.';
+                    _this._status = PeAuthService.CXN_SUCCESS;
+                    _this._token = token;
+                    _this._cookieOptions.expires = new Date(Date.now() + 86400000);
+                    _this.cookieService.putObject(_this._authType.cookieName, _this._token, _this._cookieOptions);
+                    resolve();
+                });
+            }
+            catch (e) {
+                reject(e);
+            }
+        });
+    };
+    PeAuthService.prototype.auth = function (container, refreshToken) {
+        var _this = this;
+        var isCxnUrl = this._authType.cxnUrl !== null;
+        if (isCxnUrl) {
+            this._windowMessageListener = this._renderer.listen(window, 'message', function (e) { return _this.recievedMessage(e, refreshToken); });
+            switch (this.peAuthTypeFactory.connectBy) {
+                case 'iframe':
+                    var parentNode = this.getIframeParentNode();
+                    if (parentNode)
+                        this._renderer.removeChild(parentNode, this._iframe);
+                    this._iframe = this._renderer.createElement('iframe');
+                    this._renderer.setAttribute(this._iframe, 'class', 'pe-auth');
+                    this._renderer.setAttribute(this._iframe, 'src', this._authType.cxnUrl);
+                    this._iframeLoadListener = this._renderer.listen(this._iframe, 'load', this.iframeLoaded);
+                    var encapsulationAttr = getEncapsulationAttr(container);
+                    if (encapsulationAttr !== null)
+                        this._renderer.setAttribute(this._iframe, encapsulationAttr, '');
+                    this._renderer.appendChild(container, this._iframe);
+                    break;
+                case 'window':
+                    this._iframe = window.open(this._authType.cxnUrl, "authWin");
+                    break;
+                default:
+                    this.stopListening();
+                    break;
+            }
+        }
+        this.ngZone.run(function () {
+            if (!isCxnUrl) {
+                setTimeout(function () {
+                    _this._status = PeAuthService.CXN_ECHEC;
+                    _this._subject.next({ status: _this._status, token: _this._token, refreshToken: refreshToken, attempt: _this._nbAttempt });
+                }, 0);
+            }
+        });
+    };
+    PeAuthService.prototype.authByCookie = function () {
+        var _this = this;
+        var cookie = this.cookieService.getObject(this._authType.cookieName);
+        if (cookie) {
+            try {
+                var token_1 = this._authType.getTokenFromCookie(cookie);
+                if (!this._authType.isValidToken(token_1, this._time))
+                    throw 'Invalid authent.';
+                this.ngZone.run(function () {
+                    _this._status = PeAuthService.CXN_SUCCESS;
+                    _this._token = token_1;
+                    _this.afterCxn(_this._token, _this._status, false);
+                });
+                return true;
+            }
+            catch (e) {
+                this.cookieService.remove(this._authType.cookieName, this._cookieOptions);
+            }
+        }
+        return false;
+    };
+PeAuthService.ɵfac = function PeAuthService_Factory(t) { return new (t || PeAuthService)(ɵngcc0.ɵɵinject(PeAuthTypeFactory), ɵngcc0.ɵɵinject(ɵngcc3.CookieService), ɵngcc0.ɵɵinject(ɵngcc0.RendererFactory2), ɵngcc0.ɵɵinject(ɵngcc0.NgZone)); };
+PeAuthService.ɵprov = /*@__PURE__*/ ɵngcc0.ɵɵdefineInjectable({ token: PeAuthService, factory: function (t) { return PeAuthService.ɵfac(t); } });
+(function () { (typeof ngDevMode === "undefined" || ngDevMode) && ɵngcc0.ɵsetClassMetadata(PeAuthService, [{
+        type: core.Injectable
+    }], function () { return [{ type: PeAuthTypeFactory }, { type: ɵngcc3.CookieService }, { type: ɵngcc0.RendererFactory2 }, { type: ɵngcc0.NgZone }]; }, null); })();
+    return PeAuthService;
+}());
+PeAuthService.CXN_OFF = "off";
+PeAuthService.CXN_PROGRESS = "progress";
+PeAuthService.CXN_ECHEC = "echec";
+PeAuthService.CXN_MAX_RETRY = "max-retry";
+PeAuthService.CXN_SUCCESS = "success";
+PeAuthService.ctorParameters = function () { return [
+    { type: PeAuthTypeFactory, },
+    { type: ngxCookie.CookieService, },
+    { type: core.RendererFactory2, },
+    { type: core.NgZone, },
+]; };
+var PeInterceptService = (function () {
+    function PeInterceptService() {
+        var _this = this;
+        this.secureRoute = null;
+        this.clear = function (e) {
+            _this.secureRoute = null;
+        };
+    }
+PeInterceptService.ɵfac = function PeInterceptService_Factory(t) { return new (t || PeInterceptService)(); };
+PeInterceptService.ɵprov = /*@__PURE__*/ ɵngcc0.ɵɵdefineInjectable({ token: PeInterceptService, factory: function (t) { return PeInterceptService.ɵfac(t); } });
+(function () { (typeof ngDevMode === "undefined" || ngDevMode) && ɵngcc0.ɵsetClassMetadata(PeInterceptService, [{
+        type: core.Injectable
+    }], function () { return []; }, null); })();
+    return PeInterceptService;
+}());
+var PeAuthGuardService = (function () {
+    function PeAuthGuardService(router$$1, peAuthService, peInterceptService) {
+        var _this = this;
+        this.router = router$$1;
+        this.peAuthService = peAuthService;
+        this.peInterceptService = peInterceptService;
+        router$$1.events.subscribe(function (e) {
+            if (e instanceof router.NavigationEnd)
+                _this.peInterceptService.clear(e);
+        });
+    }
+    PeAuthGuardService.prototype.canActivate = function (route, state) {
+        if (!this.peAuthService.isConnected()) {
+            this.peInterceptService.secureRoute = state;
+            var opts = {};
+            if (route)
+                opts.queryParams = route.queryParams;
+            this.router.navigate(this.peAuthService.loginRoute, opts).catch(this.peInterceptService.clear);
+            return false;
+        }
+        return true;
+    };
+PeAuthGuardService.ɵfac = function PeAuthGuardService_Factory(t) { return new (t || PeAuthGuardService)(ɵngcc0.ɵɵinject(ɵngcc4.Router), ɵngcc0.ɵɵinject(PeAuthService), ɵngcc0.ɵɵinject(PeInterceptService)); };
+PeAuthGuardService.ɵprov = /*@__PURE__*/ ɵngcc0.ɵɵdefineInjectable({ token: PeAuthGuardService, factory: function (t) { return PeAuthGuardService.ɵfac(t); } });
+(function () { (typeof ngDevMode === "undefined" || ngDevMode) && ɵngcc0.ɵsetClassMetadata(PeAuthGuardService, [{
+        type: core.Injectable
+    }], function () { return [{ type: ɵngcc4.Router }, { type: PeAuthService }, { type: PeInterceptService }]; }, null); })();
+    return PeAuthGuardService;
+}());
+PeAuthGuardService.ctorParameters = function () { return [
+    { type: router.Router, },
+    { type: PeAuthService, },
+    { type: PeInterceptService, },
+]; };
+var PeAuthInterceptor = (function () {
+    function PeAuthInterceptor(injector, router$$1, peAuthGuardService) {
+        var _this = this;
+        this.injector = injector;
+        this.router = router$$1;
+        this.peAuthGuardService = peAuthGuardService;
+        this.connexionInProgress = false;
+        this.waitingToken = null;
+        this.peAuthService = this.injector.get(PeAuthService);
+        this.peAuthService.getStatus().subscribe(function (subject) {
+            _this.connexionInProgress = subject.status === PeAuthService.CXN_PROGRESS;
+            if (_this.connexionInProgress && _this.waitingToken === null) {
+                _this.waitingToken = new rxjs.Subject();
+            }
+            else if (_this.waitingToken !== null) {
+                _this.waitingToken.next(subject.status);
+                if (subject.status === PeAuthService.CXN_SUCCESS || subject.status === PeAuthService.CXN_MAX_RETRY) {
+                    _this.waitingToken.complete();
+                    _this.waitingToken = null;
+                }
+            }
+        });
+    }
+    PeAuthInterceptor.prototype.addRequestHeader = function (request) {
+        var options = {
+            setHeaders: {
+                Authorization: this.peAuthService.authorizationHeader
+            }
+        };
+        if (this.peAuthService.type === PeAuthTypeFactory.AUTH_PEAM) {
+            options.setHeaders["typeAuth"] = '/' + this.peAuthService.mode;
+        }
+        return request.clone(options);
+    };
+    PeAuthInterceptor.prototype.intercept = function (request, next) {
+        var _this = this;
+        if (this.peAuthService.isConnected()) {
+            request = this.addRequestHeader(request);
+        }
+        return new rxjs.Observable(function (subscriber) {
+            next.handle(request).subscribe(function (value) {
+                subscriber.next(value);
+            }, function (error) {
+                if (error instanceof http.HttpErrorResponse && error.status === 401) {
+                    if (_this.peAuthService.isConnected()) {
+                        subscriber.error(error);
+                    }
+                    else {
+                        if (!_this.connexionInProgress) {
+                            _this.peAuthService.refreshToken();
+                        }
+                        _this.waitingToken.subscribe(function (status) {
+                            if (status === PeAuthService.CXN_SUCCESS) {
+                                _this.intercept(request, next).subscribe(function (value) {
+                                    subscriber.next(value);
+                                }, function (error) {
+                                    subscriber.error(error);
+                                }, function () {
+                                    subscriber.complete();
+                                });
+                            }
+                            else if (status === PeAuthService.CXN_MAX_RETRY) {
+                                setTimeout(function () {
+                                    _this.peAuthGuardService.canActivate(null, _this.router.routerState.snapshot);
+                                }, 0);
+                                subscriber.error("Max refresh retry attempt reached.");
+                            }
+                            else if (!_this.connexionInProgress) {
+                                _this.peAuthService.refreshToken();
+                            }
+                        });
+                    }
+                }
+                else {
+                    subscriber.error(error);
+                }
+            }, function () {
+                subscriber.complete();
+            });
+        });
+    };
+PeAuthInterceptor.ɵfac = function PeAuthInterceptor_Factory(t) { return new (t || PeAuthInterceptor)(ɵngcc0.ɵɵinject(ɵngcc0.Injector), ɵngcc0.ɵɵinject(ɵngcc4.Router), ɵngcc0.ɵɵinject(PeAuthGuardService)); };
+PeAuthInterceptor.ɵprov = /*@__PURE__*/ ɵngcc0.ɵɵdefineInjectable({ token: PeAuthInterceptor, factory: function (t) { return PeAuthInterceptor.ɵfac(t); } });
+(function () { (typeof ngDevMode === "undefined" || ngDevMode) && ɵngcc0.ɵsetClassMetadata(PeAuthInterceptor, [{
+        type: core.Injectable
+    }], function () { return [{ type: ɵngcc0.Injector }, { type: ɵngcc4.Router }, { type: PeAuthGuardService }]; }, null); })();
+    return PeAuthInterceptor;
+}());
+PeAuthInterceptor.ctorParameters = function () { return [
+    { type: core.Injector, },
+    { type: router.Router, },
+    { type: PeAuthGuardService, },
+]; };
+var PeAuthComponent = (function () {
+    function PeAuthComponent(router$$1, peAuthService, peInterceptService, element) {
+        this.router = router$$1;
+        this.peAuthService = peAuthService;
+        this.peInterceptService = peInterceptService;
+        this.element = element;
+        this._secureRoute = this.peInterceptService.secureRoute;
+    }
+    PeAuthComponent.prototype.ngOnInit = function () {
+        var _this = this;
+        if (this.onConnect)
+            this.peAuthService.on("connect", this.onConnect);
+        this._connect = this.peAuthService.connect(this.type, this.mode, this.element.nativeElement).subscribe(function (data) {
+            switch (data.status) {
+                case PeAuthService.CXN_SUCCESS:
+                    if (_this._secureRoute === null) {
+                        _this.router.navigate(_this.defaultRoute ? _this.defaultRoute : ['']);
+                    }
+                    else {
+                        _this.router.navigateByUrl(_this._secureRoute.url);
+                    }
+                    break;
+                case PeAuthService.CXN_ECHEC:
+                    if (_this.errorRoute)
+                        _this.router.navigate(_this.errorRoute);
+                    break;
+                case PeAuthService.CXN_MAX_RETRY:
+                    if (_this.maxRetryRoute || _this.errorRoute)
+                        _this.router.navigate(_this.maxRetryRoute ? _this.maxRetryRoute : _this.errorRoute);
+                    break;
+            }
+        });
+    };
+    PeAuthComponent.prototype.ngOnDestroy = function () {
+        this._connect.unsubscribe();
+    };
+PeAuthComponent.ɵfac = function PeAuthComponent_Factory(t) { return new (t || PeAuthComponent)(ɵngcc0.ɵɵdirectiveInject(ɵngcc4.Router), ɵngcc0.ɵɵdirectiveInject(PeAuthService), ɵngcc0.ɵɵdirectiveInject(PeInterceptService), ɵngcc0.ɵɵdirectiveInject(ɵngcc0.ElementRef)); };
+PeAuthComponent.ɵcmp = /*@__PURE__*/ ɵngcc0.ɵɵdefineComponent({ type: PeAuthComponent, selectors: [["pe-auth"]], inputs: { type: "type", mode: "mode", defaultRoute: "defaultRoute", errorRoute: "errorRoute", maxRetryRoute: "maxRetryRoute", onConnect: "onConnect" }, decls: 0, vars: 0, template: function PeAuthComponent_Template(rf, ctx) { }, encapsulation: 2 });
+(function () { (typeof ngDevMode === "undefined" || ngDevMode) && ɵngcc0.ɵsetClassMetadata(PeAuthComponent, [{
+        type: core.Component,
+        args: [{
+                selector: 'pe-auth',
+                template: ''
+            }]
+    }], function () { return [{ type: ɵngcc4.Router }, { type: PeAuthService }, { type: PeInterceptService }, { type: ɵngcc0.ElementRef }]; }, { type: [{
+            type: core.Input
+        }], mode: [{
+            type: core.Input
+        }], defaultRoute: [{
+            type: core.Input
+        }], errorRoute: [{
+            type: core.Input
+        }], maxRetryRoute: [{
+            type: core.Input
+        }], onConnect: [{
+            type: core.Input
+        }] }); })();
+    return PeAuthComponent;
+}());
+PeAuthComponent.ctorParameters = function () { return [
+    { type: router.Router, },
+    { type: PeAuthService, },
+    { type: PeInterceptService, },
+    { type: core.ElementRef, },
+]; };
+PeAuthComponent.propDecorators = {
+    "type": [{ type: core.Input },],
+    "mode": [{ type: core.Input },],
+    "defaultRoute": [{ type: core.Input },],
+    "errorRoute": [{ type: core.Input },],
+    "maxRetryRoute": [{ type: core.Input },],
+    "onConnect": [{ type: core.Input },],
+};
+var PeAuthModule = (function () {
+    function PeAuthModule() {
+    }
+    PeAuthModule.forRoot = function (options) {
+        if (options === void 0) { options = {}; }
+        return {
+            ngModule: PeAuthModule,
+            providers: [
+                PeInterceptService,
+                PeAuthTypeFactory,
+                PeAuthService,
+                PeAuthGuardService,
+                { provide: http.HTTP_INTERCEPTORS, useClass: PeAuthInterceptor, multi: true },
+                { provide: AUTH_OPTIONS, useValue: options }
+            ],
+        };
+    };
+PeAuthModule.ɵfac = function PeAuthModule_Factory(t) { return new (t || PeAuthModule)(); };
+PeAuthModule.ɵmod = /*@__PURE__*/ ɵngcc0.ɵɵdefineNgModule({ type: PeAuthModule });
+PeAuthModule.ɵinj = /*@__PURE__*/ ɵngcc0.ɵɵdefineInjector({ imports: [ngxCookie.CookieModule.forRoot(),
+        http.HttpClientModule] });
+(function () { (typeof ngDevMode === "undefined" || ngDevMode) && ɵngcc0.ɵsetClassMetadata(PeAuthModule, [{
+        type: core.NgModule,
+        args: [{
+                imports: [
+                    ngxCookie.CookieModule.forRoot(),
+                    http.HttpClientModule
+                ],
+                declarations: [
+                    PeAuthComponent
+                ],
+                exports: [
+                    PeAuthComponent
+                ]
+            }]
+    }], function () { return []; }, null); })();
+(function () { (typeof ngJitMode === "undefined" || ngJitMode) && ɵngcc0.ɵɵsetNgModuleScope(PeAuthModule, { declarations: [PeAuthComponent], imports: [ɵngcc3.CookieModule, ɵngcc1.HttpClientModule], exports: [PeAuthComponent] }); })();
+    return PeAuthModule;
+}());
+
+exports.AUTH_OPTIONS = AUTH_OPTIONS;
+exports.PeAuthModule = PeAuthModule;
+exports.PeAuthTypeFactory = PeAuthTypeFactory;
+exports.PeAuthService = PeAuthService;
+exports.PeInterceptService = PeInterceptService;
+exports.PeAuthGuardService = PeAuthGuardService;
+exports.PeAuthComponent = PeAuthComponent;
+exports.PeAuthInterceptor = PeAuthInterceptor;
+exports.OpenAMType = OpenAMType;
+exports.WebSSOType = WebSSOType;
+exports.KitSSOType = KitSSOType;
+exports.NetEntrepriseType = NetEntrepriseType;
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+})));
+
+//# sourceMappingURL=pe-commons-authent.umd.js.map
